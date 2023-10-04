@@ -79,7 +79,7 @@ class Flex(Renderable[T]):
       #   out.append(rendered)
       token_budget = new_token_budget
 
-class Cat(Renderable):
+class Cat(Renderable[T]):
   def __init__(self, iterable, flex_weight=1):
     self._iterable = iterable
     self._weight = flex_weight
@@ -87,7 +87,7 @@ class Cat(Renderable):
   @property
   def flex_weight(self): return self._weight
 
-  def render(self, ctx: Context) -> list:
+  def render(self, ctx: Context) -> Iterable[T]:
     remaining = ctx.max_tokens
     for item in self._iterable:
       # print(f'Cat.render {child=}')
@@ -100,3 +100,31 @@ class Cat(Renderable):
       if remaining <= 0: return   
 
   def bounds(self, ctx: Context): return Bounds.UNKNOWN
+
+from langchain.schema import ChatMessage
+
+class Msg(Renderable):
+  def __init__(self, obj):
+    self.obj = obj
+
+  def bounds(self, ctx: Context):
+    me = ctx.render(self)
+    return Bounds(me.token_count, me.token_count)
+
+  def render(self, ctx: Context):
+    role = 'user'
+    content = None
+    name = None
+    match self.obj:
+      case str(content): pass
+      case ChatMessage(role, content, name): pass
+      case {'role': role, 'content': content, 'name': name}: pass
+      case {'role': role, 'content': content}: pass
+    rcontent = ctx.child(output_type=str).render(content)
+    rname = ctx.child(output_type=str).render(name)
+    rrole = ctx.child(output_type=str).render(role)
+    msg = {'role': rrole.output, 'content': rcontent.output}
+    if rname.output is not None:
+      msg['name'] = rname.output
+    token_count = 1 + rcontent.token_count + rrole.token_count
+    yield ctx.obj(object=msg, token_count=token_count)

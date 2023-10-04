@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from renderable import Renderable, Str, Cat
+from renderable import Msg, Renderable, Str, Cat
 from typing import Generic, Iterable, TypeVar, Protocol
 from functools import cached_property
 from .context import Context
@@ -47,6 +47,10 @@ class Renderer(Generic[T]):
     token_count = len(cropped)
     return StrPart(content=self.decode(cropped), token_count=token_count)
 
+  def obj(self, object, token_count):
+    print(object, token_count)
+    return StrPart(content='', token_count=token_count, object=object)
+
   @property
   def model_name(self):
     return self.kwargs.get('model_name', None)
@@ -67,18 +71,6 @@ class Renderer(Generic[T]):
   def render(self, obj):
     renderable = self.renderable_for(obj)
     return RenderPass(self, renderable)
-    # renderable = self.renderable_for(obj)
-    # out = renderable.render(self)
-    # count = self.len(out)
-    # if count > self.max_tokens:
-    #   print(f'{out=}')
-    #   raise OutOfBoundsError({
-    #     "message": "Item rendered too many tokens",
-    #     "renderable": renderable,
-    #     "max_tokens": self.max_tokens,
-    #     "actual_tokens": count
-    #   })
-    # return out#self.decode(self.encode(out)[:self.max_tokens])
   
   @abstractmethod
   def collect(self, action, output=None): pass    
@@ -130,6 +122,12 @@ class ChatRenderer(Renderer[list[ChatMessage]]):
       return self.__class__.str_renderer_class
     return super().renderer_class(output_type)
 
+  def renderable_for(self, obj):
+    match obj:
+      case str(msg): return Msg(msg)
+      case dict(kwargs): return Msg(kwargs)
+    return super().renderable_for(obj)
+
 class RenderPass(Generic[T]):
   def __init__(self, ctx: Context, renderable):
     self.ctx = ctx
@@ -157,7 +155,6 @@ class RenderPass(Generic[T]):
     for item in self._iter:
       self._history.append(item)
       yield item
-      #print(item)
   
 
 class OutOfBoundsError(BaseException): pass
