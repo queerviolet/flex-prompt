@@ -52,19 +52,19 @@ class Flex(Renderable[T]):
         # available tokens in a weighted average by flex_weight
         total_weight += getattr(renderable, 'flex_weight', 1)
     for renderable, size in sized_renderables:
-      # print(f'ListRenderable.render {(ctx.max_tokens, token_budget, renderable, size)=}')
+      print(f'Flex.render {(ctx.max_tokens, token_budget, renderable, size)=}')
       if not renderable.bounds(ctx).has_fixed_size:
         weight = getattr(renderable, 'flex_weight', 1)
         weighted_max = int(token_budget * weight / total_weight)
         max_tokens = renderable.bounds(ctx).fill(weighted_max).max
         rendered = ctx.with_max_tokens(max_tokens).render(renderable)
-        # print(f'{(ctx.max_tokens, token_budget, max_tokens, rendered)=}')
+        print(f'{(ctx.max_tokens, token_budget, max_tokens, rendered.output)=}')
         total_weight -= weight
       else:
-        # print(f'{(ctx.max_tokens, token_budget, size, rendered)=}')
         rendered = ctx.with_max_tokens(size).render(renderable)
+        print(f'{(ctx.max_tokens, token_budget, size, rendered.output)=}')
       # print(f'{rendered=}')
-      # print(f'ListRenderable.render {(renderable, ctx.len(rendered))=}')
+      # print(f'Flex.render {(renderable, ctx.len(rendered))=}')
       # print(f'{token_budget=}')
 
       new_token_budget = token_budget - rendered.token_count + size
@@ -120,11 +120,18 @@ class Msg(Renderable):
       case ChatMessage(role, content, name): pass
       case {'role': role, 'content': content, 'name': name}: pass
       case {'role': role, 'content': content}: pass
-    rcontent = ctx.child(output_type=str).render(content)
     rname = ctx.child(output_type=str).render(name)
     rrole = ctx.child(output_type=str).render(role)
+    content_max = ctx.max_tokens - rname.token_count - rrole.token_count
+    rcontent = ctx.child(output_type=str, max_tokens=content_max).render(content)
     msg = {'role': rrole.output, 'content': rcontent.output}
     if rname.output is not None:
       msg['name'] = rname.output
     token_count = 1 + rcontent.token_count + rrole.token_count
     yield ctx.obj(object=msg, token_count=token_count)
+
+class Empty:
+  def bounds(self, _: Context): return Bounds.ZERO
+  def render(self, _: Context):
+    if False:
+      yield None

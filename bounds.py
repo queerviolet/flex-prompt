@@ -1,9 +1,11 @@
 from typing import Self
 
+from dataclasses import dataclass
+
+@dataclass
 class Bounds:
-  def __init__(self, min=0, max=None):
-    self.min = min
-    self.max = max if max is not None and max >= min else None
+  min: int = 0
+  max: int = None
 
   @property
   def has_fixed_size(self) -> bool:

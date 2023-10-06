@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from renderable import Msg, Renderable, Str, Cat
-from typing import Generic, Iterable, TypeVar, Protocol
+from bounds import Bounds
+from renderable import Empty, Msg, Renderable, Str, Cat
+from typing import Callable, Generic, Iterable, TypeAlias, TypeVar, Protocol
 from functools import cached_property
 from .context import Context
 
@@ -26,7 +27,7 @@ class Renderer(Generic[T]):
     return Self.species_by_class[llm.__class__].for_model(llm)
 
   def with_max_tokens(self, max_tokens):
-    return  self.__class__(max_tokens=max_tokens, tokenizer=self.tokenizer, **self.kwargs)
+    return self.__class__(max_tokens=max_tokens, tokenizer=self.tokenizer, **self.kwargs)
   
   def child(self, max_tokens=None, output_type=None, **kwargs):
     if max_tokens is None: max_tokens = self.max_tokens
@@ -48,7 +49,6 @@ class Renderer(Generic[T]):
     return StrPart(content=self.decode(cropped), token_count=token_count)
 
   def obj(self, object, token_count):
-    print(object, token_count)
     return StrPart(content='', token_count=token_count, object=object)
 
   @property
@@ -76,6 +76,7 @@ class Renderer(Generic[T]):
   def collect(self, action, output=None): pass    
 
   def renderable_for(self, obj):
+    if obj is None: return Empty()
     if isinstance(obj, Renderable): return obj
     if isinstance(obj, str): return Str(obj)
     if isinstance(obj, Iterable): return Cat(obj)
@@ -108,13 +109,17 @@ class ChatRenderer(Renderer[list[ChatMessage]]):
   def collect(self, action, output=None):
     if output is None:
       output = []
+    message = None
+    print(f'{action=}')
     match action:
-      case StrPart(object=ChatMessage(message)): pass
-      case StrPart(content):
-        message = ChatMessage(role='user', content=content)
+      case StrPart(object=ChatMessage() as message): pass
       case StrPart(object=dict(kwargs)):
         message = ChatMessage(**kwargs)
-    output.append(message)
+      case StrPart(content):
+        print(f'{content=}')
+        message = ChatMessage(role='user', content=content)
+    print(f'{message=}')
+    if message: output.append(message)
     return output
   
   def renderer_class(self, output_type):
@@ -128,22 +133,23 @@ class ChatRenderer(Renderer[list[ChatMessage]]):
       case dict(kwargs): return Msg(kwargs)
     return super().renderable_for(obj)
 
+Collect: TypeAlias = Callable[[Any, T], T]
+
 class RenderPass(Generic[T]):
   def __init__(self, ctx: Context, renderable):
     self.ctx = ctx
-    self.renderable = renderable
     self._history = []
     self._iter = renderable.render(ctx)
 
   @cached_property
-  def output(self):
+  def output(self) -> T:
     output = None
     for part in self:
       output = self.ctx.collect(part, output)
     return output
   
   @cached_property
-  def token_count(self):
+  def token_count(self) -> int:
     count = 0
     for part in self:
       match part:
