@@ -1,26 +1,32 @@
 from typing_extensions import runtime_checkable
 from typing import Protocol, Any, Iterable, Generic, TypeVar
+
+from dataclasses import dataclass
 from renderer.context import Context
-from bounds import Bounds
 from functools import cached_property
 from renderer.context import Context
 
 def flex_weight(child):
   return getattr(child, 'flex_weight', 1)
 
+@dataclass
 class Flex:
-  def __init__(self, children, flex_weight=1):
-    self.children = children
-    self.flex_weight = flex_weight
+  children: list[Any]
+  flex_weight: int = 1
+  separator: Any = None
 
-  def bounds(self, ctx: Context) -> Bounds:
-    return sum((child.bounds(ctx) for child in self.children(ctx)), Bounds.ZERO)
-  
   def __call__(self, render: Context) -> Iterable:
     tokens_remaining = render.max_tokens
     flex_total_weight = sum((flex_weight(c) for c in self.children))
-
+    if self.separator:
+      separator = render(self.separator)
+      tokens_remaining -= separator.token_count * (len(self.children) - 1)
+      first = True
     for child in self.children:
+      if self.separator and not first:
+        yield separator
+      else:
+        first = False
       weight = flex_weight(child)
       size = int(tokens_remaining * weight / flex_total_weight)
       output = render(child, max_tokens=size)
@@ -29,22 +35,26 @@ class Flex:
       if tokens_remaining >= 0: yield output
       else: return
 
+@dataclass(init=False)
 class Cat:
-  def __init__(self, iterable, flex_weight=1):
-    self._iterable = iterable
+  children: list[Iterable[Any]]
+  flex_weight: int = 1
+  def __init__(self, *children: list[Iterable[Any]], flex_weight=1):
+    self.children = children
     self.flex_weight = flex_weight
 
   def __call__(self, render: Context) -> Iterable:
     remaining = render.max_tokens
-    for item in self._iterable:
-      # print(f'Cat.render {child=}')
-      rendered = render(item, max_tokens=remaining)
-      # print(f'Cat.render {(rendered, rendered.token_count, remaining)=}')
-      if rendered.overflow:
-        return
-      remaining -= rendered.token_count
-      yield rendered
-      if remaining <= 0: return   
+    for child in self.children:
+      for item in child:
+        # print(f'Cat.render {child=}')
+        rendered = render(item, max_tokens=remaining)
+        # print(f'Cat.render {(rendered, rendered.token_count, remaining)=}')
+        if rendered.overflow:
+          return
+        remaining -= rendered.token_count
+        yield rendered
+        if remaining <= 0: return   
 
 from langchain.schema import ChatMessage
 

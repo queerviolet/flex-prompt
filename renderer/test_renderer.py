@@ -1,3 +1,4 @@
+from renderer.renderer import StrRenderer
 from . import Renderer
 from renderable import Flex, Cat
 from langchain.chat_models import ChatOpenAI
@@ -7,10 +8,12 @@ def infinite(s):
   while True:
     yield s
 
+class CharTokenizer:
+  def encode(self, input): return [*input]
+  def decode(self, tokens): return ''.join(tokens)
+render = StrRenderer(100, CharTokenizer())
 
 def test_flex():
-  render = Renderer.for_model(OpenAI())
-
   assert render(Flex([
     infinite('A'),
     infinite('B'),
@@ -23,12 +26,25 @@ def test_flex():
     infinite('C'),
   ]), max_tokens=8).output == 'AABBBBCC'
 
+def test_flex_separator():
+  assert render(Flex([
+    infinite('A'),
+    Cat(infinite('B'), flex_weight=2),
+    infinite('C'),
+  ], separator='--'), max_tokens=12).output == 'AA--BBBB--CC'
+
 
 def test_callable(snapshot):
   render = Renderer.for_model(OpenAI())
   def prompt(inst, tips, examples, output, input):
-    return Flex([inst, '\n', Cat(tips), '\n', Cat(output), '\n', Cat(examples, flex_weight=2),
-                 f'Input:{input}\n', f'Output:'])
+    return Flex([
+      inst,
+      Cat(tips),
+      Cat(output),
+      Cat(examples, flex_weight=2),
+      f'Input:{input}',
+      f'Output:'
+    ], separator='\n\n')
   snapshot.assert_match(render(prompt(
     inst='Make a nice list',
     input='something else',
