@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from bounds import Bounds
-from renderable import Empty, Msg, Renderable, Str, Cat
+from renderable import Msg, Cat
 from typing import Callable, Generic, Iterable, TypeAlias, TypeVar, Protocol
 from functools import cached_property
 from .context import Context
@@ -33,7 +32,7 @@ class Renderer(Generic[T]):
     if max_tokens is None: max_tokens = self.max_tokens
     if output_type is None: output_type = self.output_type
     cls = self.renderer_class(output_type)
-    return cls(max_tokens, tokenizer=self.tokenizer, **kwargs)
+    return cls(max_tokens, tokenizer=self.tokenizer, **self.kwargs, **kwargs)
   
   def renderer_class(self, output_type):
     if output_type == self.output_type: return self.__class__
@@ -67,20 +66,29 @@ class Renderer(Generic[T]):
     if isinstance(obj, list):
       return sum((self.len(o) for o in obj))
     raise TypeError('obj must be a string or list')
+  
+  def __call__(self, input, **context_args):
+    if context_args:
+      return self.child(**context_args)(input)
+    return RenderPass(self, input)
 
-  def render(self, obj):
-    renderable = self.renderable_for(obj)
-    return RenderPass(self, renderable)
+  def render(self, input):
+    if input is None: return
+    if callable(input): yield from input(self)
+    elif isinstance(input, str):
+      encoded = self.encode(input)
+      include = encoded[:self.max_tokens]
+      yield StrPart(content=self.decode(include), token_count=len(include))
+      overflow_count = len(encoded) - self.max_tokens
+      if overflow_count > 0:
+        yield Overflow(cropped=self.decode(encoded[self.max_tokens:]), token_count=overflow_count)
+    elif isinstance(input, Iterable):
+      yield from Cat(input) (self)
+    else:
+      yield str(input)
   
   @abstractmethod
   def collect(self, action, output=None): pass    
-
-  def renderable_for(self, obj):
-    if obj is None: return Empty()
-    if isinstance(obj, Renderable): return obj
-    if isinstance(obj, str): return Str(obj)
-    if isinstance(obj, Iterable): return Cat(obj)
-    return Str(str(obj))
 
 from typing import Any
 
@@ -90,14 +98,23 @@ class StrPart:
   token_count: int
   object: Any = None
 
+
+@dataclass
+class Overflow:
+  cropped: str
+  token_count: int
+
 class StrRenderer(Renderer[str]):
   output_type = str
 
-  def collect(self, action, output=None):
+  def collect(self, action=None, output=None):
     if output is None:
       output = ''
+    if action is None: return output
     match action:
+      case str(s): output += s
       case StrPart(content): output += content
+      case RenderPass() as r: output += r.output
     return output
 
 from langchain.schema import ChatMessage
@@ -136,17 +153,25 @@ class ChatRenderer(Renderer[list[ChatMessage]]):
 Collect: TypeAlias = Callable[[Any, T], T]
 
 class RenderPass(Generic[T]):
-  def __init__(self, ctx: Context, renderable):
+  def __init__(self, ctx: Context, input):
     self.ctx = ctx
     self._history = []
-    self._iter = renderable.render(ctx)
+    self._iter = ctx.render(input)
 
   @cached_property
   def output(self) -> T:
-    output = None
+    output = self.ctx.collect()
     for part in self:
       output = self.ctx.collect(part, output)
     return output
+  
+  @cached_property
+  def overflow(self) -> int:
+    overflow = 0
+    for part in self:
+      match part:
+        case Overflow(token_count=count): overflow += count
+    return overflow
   
   @cached_property
   def token_count(self) -> int:
@@ -154,6 +179,8 @@ class RenderPass(Generic[T]):
     for part in self:
       match part:
         case StrPart(token_count=int(token_count)): count += token_count
+        case str(s): count += self.ctx.len(s)
+        case _:  count += getattr(part, 'token_count', 0)
     return count
 
   def __iter__(self):
