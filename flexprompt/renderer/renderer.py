@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from renderable import Msg, Cat
+from ..cat import Cat
 from typing import Callable, Generic, Iterable, TypeAlias, TypeVar, Protocol
 from functools import cached_property
 from .context import Context
@@ -144,11 +144,13 @@ class ChatRenderer(Renderer[list[ChatMessage]]):
       return self.__class__.str_renderer_class
     return super().renderer_class(output_type)
 
-  def renderable_for(self, obj):
-    match obj:
-      case str(msg): return Msg(msg)
-      case dict(kwargs): return Msg(kwargs)
-    return super().renderable_for(obj)
+  # TODO: fix message list rendering
+  #
+  # def renderable_for(self, obj):
+  #   match obj:
+  #     case str(msg): return Msg(msg)
+  #     case dict(kwargs): return Msg(kwargs)
+  #   return super().renderable_for(obj)
 
 Collect: TypeAlias = Callable[[Any, T], T]
 
