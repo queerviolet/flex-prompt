@@ -1,76 +1,55 @@
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from ..cat import Cat
-from typing import Callable, Generic, Iterable, TypeAlias, TypeVar, Protocol
-from functools import cached_property
-from .context import Context
+from typing import Generic, Iterable, TypeVar
+from functools import cached_property, cache
+from .context import Tokenizer, Context
+from .rendering import StrPart, Str, Overflow
 
 T = TypeVar('T')
+
+@dataclass(frozen=True, slots=True)
 class Renderer(Generic[T]):
   max_tokens: int
-  output_type: type[T]
+  tokenizer: Tokenizer
+  output_type: type[T] = Str  
 
-  species_by_class = {}  
-  species_by_classname = {}
   @classmethod
-  def register(Self, renderer_class):
-    Self.species_by_class[renderer_class.model_class] = renderer_class
-    Self.species_by_classname[str(renderer_class.model_class.__name__)] = renderer_class
-    return renderer_class
+  def register(Self, class_or_fqn):
+    if not isinstance(class_or_fqn, str):
+      return Self.register(fullname(class_or_fqn))
+    registry = Self._registry()
+    def register_finder(finder):
+      for name in names_from(class_or_fqn):
+        registry[name] = finder
+      return finder
+    return register_finder
+  
+  @staticmethod
+  @cache
+  def _registry(): return {}
 
   @classmethod
   def for_model(Self, llm):
+    registry = Self._registry()
     if isinstance(llm, str):
-      species, _, model_name = llm.partition(':')
-      return Self.species_by_classname[species].for_model_name(model_name)
-    return Self.species_by_class[llm.__class__].for_model(llm)
-
-  def with_max_tokens(self, max_tokens):
-    return self.__class__(max_tokens=max_tokens, tokenizer=self.tokenizer, **self.kwargs)
+      qualname, _, model_name = llm.partition(':')
+      return registry[qualname](model_name)
+    return registry[fullname(llm.__class__)](llm, Self)
   
-  def child(self, max_tokens=None, output_type=None, **kwargs):
-    if max_tokens is None: max_tokens = self.max_tokens
-    if output_type is None: output_type = self.output_type
-    cls = self.renderer_class(output_type)
-    return cls(max_tokens, tokenizer=self.tokenizer, **self.kwargs, **kwargs)
-  
-  def renderer_class(self, output_type):
-    if output_type == self.output_type: return self.__class__
-  
-  def __init__(self, max_tokens: int, tokenizer, **kwargs):
-    self.max_tokens = max_tokens
-    self.tokenizer = tokenizer
-    self.kwargs = kwargs
-
-  def str(self, content):
-    cropped = self.encode(content)[:self.max_tokens]
-    token_count = len(cropped)
-    return StrPart(content=self.decode(cropped), token_count=token_count)
-
-  def obj(self, object, token_count):
-    return StrPart(content='', token_count=token_count, object=object)
-
-  @property
-  def model_name(self):
-    return self.kwargs.get('model_name', None)
+  def child(self, **props):
+    return replace(self, **props)
   
   def encode(self, str):
     return self.tokenizer.encode(str)
   
   def decode(self, encoded):
     return self.tokenizer.decode(encoded)
-
-  def len(self, obj):
-    if isinstance(obj, str):
-      return len(self.encode(obj))
-    if isinstance(obj, list):
-      return sum((self.len(o) for o in obj))
-    raise TypeError('obj must be a string or list')
   
-  def __call__(self, input, **context_args):
+  def __call__(self, input, **context_args) -> T:
     if context_args:
       return self.child(**context_args)(input)
-    return RenderPass(self, input)
+    return self.output_type(self, input)
 
   def render(self, input):
     if input is None: return
@@ -83,39 +62,35 @@ class Renderer(Generic[T]):
       if overflow_count > 0:
         yield Overflow(cropped=self.decode(encoded[self.max_tokens:]), token_count=overflow_count)
     elif isinstance(input, Iterable):
-      yield from Cat(input) (self)
+      yield from Cat(input)(self)
     else:
-      yield str(input)
+      yield from self.render(str(input))
   
   @abstractmethod
   def collect(self, action, output=None): pass    
 
-from typing import Any
+def names_from(fqn):
+  if not fqn: return
+  yield fqn
+  _, _, tail = fqn.partition('.')
+  yield from names_from(tail)
 
-@dataclass
-class StrPart:
-  content: str
-  token_count: int
-  object: Any = None
+def fullname(cls):
+  return f'{cls.__module__}.{cls.__qualname__}'
 
 
-@dataclass
-class Overflow:
-  cropped: str
-  token_count: int
+# class StrRenderer(Renderer[str]):
+#   output_type = str
 
-class StrRenderer(Renderer[str]):
-  output_type = str
-
-  def collect(self, action=None, output=None):
-    if output is None:
-      output = ''
-    if action is None: return output
-    match action:
-      case str(s): output += s
-      case StrPart(content): output += content
-      case RenderPass() as r: output += r.output
-    return output
+#   def collect(self, action=None, output=None):
+#     if output is None:
+#       output = ''
+#     if action is None: return output
+#     match action:
+#       case str(s): output += s
+#       case StrPart(content): output += content
+#       case Rendering() as r: output += r.output
+#     return output
 
 # from langchain.schema import ChatMessage
 
@@ -153,40 +128,3 @@ class StrRenderer(Renderer[str]):
 #   #   return super().renderable_for(obj)
 
 # Collect: TypeAlias = Callable[[Any, T], T]
-
-class RenderPass(Generic[T]):
-  def __init__(self, ctx: Context, input):
-    self.ctx = ctx
-    self._history = []
-    self._iter = ctx.render(input)
-
-  @cached_property
-  def output(self) -> T:
-    output = self.ctx.collect()
-    for part in self:
-      output = self.ctx.collect(part, output)
-    return output
-  
-  @cached_property
-  def overflow(self) -> int:
-    overflow = 0
-    for part in self:
-      match part:
-        case Overflow(token_count=count): overflow += count
-    return overflow
-  
-  @cached_property
-  def token_count(self) -> int:
-    count = 0
-    for part in self:
-      match part:
-        case StrPart(token_count=int(token_count)): count += token_count
-        case str(s): count += self.ctx.len(s)
-        case _:  count += getattr(part, 'token_count', 0)
-    return count
-
-  def __iter__(self):
-    yield from self._history
-    for item in self._iter:
-      self._history.append(item)
-      yield item
