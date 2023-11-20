@@ -9,8 +9,6 @@ from .context import Context
 class StrPart:
   content: str
   token_count: int
-  object: Any = None
-
 
 @dataclass
 class Overflow:
