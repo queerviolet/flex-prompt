@@ -1,5 +1,5 @@
 from renderer.renderer import Renderer
-from renderable import Cat, Flex
+from flexprompt.cat import Cat, Flex
 
 from langchain.llms import OpenAI
 

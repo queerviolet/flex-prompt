@@ -62,5 +62,5 @@ class Str(Rendering[str]):
       match part:
         case str(s): output.write(s)
         case StrPart(content): output.write(content)
-        case Rendering() as r: output.write(r.output)      
+        case Rendering() as r: output.write(r.output)
     return output.getvalue()

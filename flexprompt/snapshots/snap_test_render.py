@@ -15,6 +15,12 @@ Tip 2: Do the right thing
 Tip 3: Do the right thing
 Tip 4: Do the right thing
 Tip 5: Do the right thing
+Tip 6: Do the right thing
+Tip 7: Do the right thing
+Tip 8: Do the right thing
+Tip 9: Do the right thing
+Tip 10: Do the right thing
+Tip 11: Do the right thing
 
 
 Return a markdown list
@@ -47,8 +53,78 @@ Output:
   - b
   - c
 
+Example 4:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 5:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 6:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 7:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 8:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 9:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 10:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 11:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 12:
+Input: something
+Output:
+  - a
+  - b
+  - c
+
+Example 13:
+Input: something
+Output:
+  - a
+  - b
+  - c
 
 
-Input:something else
+
+Input: something else
 
 Output:'''
