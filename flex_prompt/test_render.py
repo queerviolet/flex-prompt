@@ -1,6 +1,6 @@
 
 from langchain import OpenAI
-from flexprompt import Renderer, Flex, Cat
+from flex_prompt import Renderer, Flex, Cat
 from .test_helpers import infinite, render
 
 def test_callable(snapshot):

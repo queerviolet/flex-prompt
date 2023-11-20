@@ -1,4 +1,4 @@
-from flexprompt import Flex, Cat
+from flex_prompt import Flex, Cat
 from .test_helpers import render, infinite
 
 def test_flex():

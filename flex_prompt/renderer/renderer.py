@@ -65,9 +65,6 @@ class Renderer(Generic[T]):
       yield from Cat(input)(self)
     else:
       yield from self.render(str(input))
-  
-  @abstractmethod
-  def collect(self, action, output=None): pass    
 
 def names_from(fqn):
   if not fqn: return

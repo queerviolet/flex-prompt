@@ -1,5 +1,5 @@
 
-from flexprompt.renderer.renderer import Renderer, Str
+from flex_prompt.renderer.renderer import Renderer, Str
 
 def infinite(s):
   while True:
