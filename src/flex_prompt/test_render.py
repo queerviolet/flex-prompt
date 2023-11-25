@@ -23,3 +23,10 @@ def test_callable(snapshot):
     output='Return a markdown list'
     ), max_tokens=2000).output)
 
+
+def test_recursive(snapshot):
+  def items(ctx):
+    yield 'hello'
+    yield Cat([1, 2, 3])
+    yield Flex([infinite('a'), infinite('b'), infinite('c')])
+  snapshot.assert_match(render(items, max_tokens=100).output)

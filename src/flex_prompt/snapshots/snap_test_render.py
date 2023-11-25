@@ -128,3 +128,5 @@ Output:
 Input: something else
 
 Output:'''
+
+snapshots['test_recursive 1'] = 'hello123aaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbccccccccccccccccccccccccccccccc'
