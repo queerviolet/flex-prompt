@@ -4,7 +4,7 @@ from ..cat import Cat
 from typing import Generic, Iterable, TypeVar
 from functools import cached_property, cache
 from .context import Tokenizer, Context
-from .rendering import StrPart, Str, Overflow
+from .rendering import Str
 
 T = TypeVar('T')
 
@@ -50,21 +50,6 @@ class Renderer(Generic[T]):
     if context_args:
       return self.child(**context_args)(input)
     return self.output_type(self, input)
-
-  def render(self, input):
-    if input is None: return
-    if callable(input): yield from input(self)
-    elif isinstance(input, str):
-      encoded = self.encode(input)
-      include = encoded[:self.max_tokens]
-      yield StrPart(content=self.decode(include), token_count=len(include))
-      overflow_count = len(encoded) - self.max_tokens
-      if overflow_count > 0:
-        yield Overflow(cropped=self.decode(encoded[self.max_tokens:]), token_count=overflow_count)
-    elif isinstance(input, Iterable):
-      yield from Cat(input)(self)
-    else:
-      yield from self.render(str(input))
 
 def names_from(fqn):
   if not fqn: return

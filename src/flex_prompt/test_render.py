@@ -7,7 +7,7 @@ def test_callable(snapshot):
   def prompt(inst, tips, examples, output, input):    
     return Flex([
       inst,
-      tips,
+      Cat(tips),
       output,
       Cat(examples, flex_weight=2),
       f'Input: {input}',
