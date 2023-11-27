@@ -119,7 +119,7 @@
 
 # print(num_tokens_from_messages(msgs))
 
-from flex_prompt import Flex, Cat
+from flex_prompt import Flex, Cat, Block
 from .test_helpers import render, infinite
 
 r = render(Flex([
@@ -128,5 +128,12 @@ r = render(Flex([
   infinite('C'),
 ]), max_tokens=6)
 
+print(f'{r.output=}')
+print(f'{r._parts=}')
+
+r = render([
+  Block('hello there'),
+  Block('world of nothing')
+], max_tokens=15)
 print(f'{r.output=}')
 print(f'{r._parts=}')

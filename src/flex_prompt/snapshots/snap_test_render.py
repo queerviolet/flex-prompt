@@ -21,7 +21,6 @@ Tip 8: Do the right thing
 Tip 9: Do the right thing
 Tip 10: Do the right thing
 Tip 11: Do the right thing
-Tip 12: Do the right thing
 
 
 Return a markdown list
@@ -118,13 +117,6 @@ Output:
   - c
 
 Example 13:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
-Example 14:
 Input: something
 Output:
   - a
