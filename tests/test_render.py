@@ -1,7 +1,6 @@
 
-from langchain import OpenAI
-from flex_prompt import Renderer, Flex, Cat
-from .test_helpers import infinite, render
+from flex_prompt import Flex, Cat
+from test_helpers import infinite, render
 
 def test_callable(snapshot):
   def prompt(inst, tips, examples, output, input):    

@@ -1,5 +1,5 @@
 
-from flex_prompt.renderer.renderer import Renderer, Str
+from flex_prompt import Target, Str
 
 def infinite(s):
   while True:
@@ -9,4 +9,4 @@ class CharTokenizer:
   def encode(self, input): return [*input]
   def decode(self, tokens): return ''.join(tokens)
 
-render = Renderer(100, tokenizer=CharTokenizer(), output_type=Str)
+render = Target(100, tokenizer=CharTokenizer(), output_type=Str)

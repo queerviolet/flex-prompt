@@ -27,7 +27,8 @@ class Tokens(Part):
 @dataclass(frozen=True, slots=True)
 class Overflow(Part):
   cropped: Part  
-  def __len__(self): return len(self.cropped)
+  def __len__(self):
+    return len(self.cropped)
 
   @property
   def overflow_token_count(self):

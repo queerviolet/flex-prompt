@@ -1,6 +1,10 @@
-from .renderer import Renderer, Context
+from .renderer import Context
 from .cat import Cat
 from .flex import Flex
+from .target import Target, target, register_target_finder
+from .rendering import Str
 
-def render(input, model):
-  return Renderer.for_model(model)(input)
+from . import targets
+
+def render(input, model, **kwargs) -> Str:
+  return target(model)(input, **kwargs)

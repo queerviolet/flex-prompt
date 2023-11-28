@@ -1,17 +1,18 @@
-from .renderer import Renderer
+from ..target import register_target_finder
 
 try:
   import tiktoken
-  from langchain.llms.openai import OpenAI
   
-  @Renderer.register(OpenAI)
-  def render_openai(model, Renderer):
-    if not isinstance(model, str):
-      return render_openai(model.model_name, Renderer)
-    return Renderer(tokenizer=tiktoken.encoding_for_model(model),
-        max_tokens=MAX_TOKENS[model])
+  @register_target_finder
+  def openai_models(model, Target):
+    if isinstance(model, str) and model in OPENAI_MODELS_MAX_TOKENS:
+      return Target(tokenizer=tiktoken.encoding_for_model(model),
+        max_tokens=OPENAI_MODELS_MAX_TOKENS[model])
+    model_name = getattr(model, 'model_name', None)
+    if model_name: return openai_models(model_name)
+    return None
 
-  MAX_TOKENS = {
+  OPENAI_MODELS_MAX_TOKENS = {
     'gpt-4': 8192,
     'gpt-4-0613': 8192,
     'gpt-4-32k': 32768,

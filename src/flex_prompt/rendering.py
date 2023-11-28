@@ -4,8 +4,8 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import Any, Generic, TypeVar
 from collections.abc import Callable, Iterable
-from .context import Context, Part, Tokens, Overflow
-from ..cat import Cat
+from .renderer.context import Context, Part, Tokens, Overflow
+from .cat import Cat
 
 def token_count(item):
   return getattr(item, 'token_count', 0)
@@ -35,7 +35,6 @@ class Rendering(Generic[T], Part):
       tokens.extend(getattr(part, 'tokens', []))
     return tokens
   
-  @cached_property
   def __len__(self): return len(self.tokens)
 
   @cached_property
