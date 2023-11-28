@@ -1,7 +1,6 @@
 from dataclasses import dataclass, replace
 from typing import Generic, TypeVar
 from .renderer.context import Tokenizer
-from .rendering import Str
 
 T = TypeVar('T')
 
@@ -9,7 +8,7 @@ T = TypeVar('T')
 class Target(Generic[T]):
   max_tokens: int
   tokenizer: Tokenizer
-  output_type: type[T] = Str
+  output_type: type[T]
 
   def encode(self, str):
     return self.tokenizer.encode(str)
@@ -31,3 +30,4 @@ def target(model):
 
 def register_target_finder(find):
   _target_finders.append(find)
+  return find

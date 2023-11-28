@@ -6,13 +6,13 @@ def test_flex():
     infinite('A'),
     infinite('B'),
     infinite('C'),
-  ]), max_tokens=6).output == 'AABBCC'
+  ]), max_tokens=12).output == 'AAAABBBBCCCC'
 
   assert render(Flex([
     infinite('A'),
     Cat(infinite('B'), flex_weight=2),
     infinite('C'),
-  ]), max_tokens=8).output == 'AABBBBCC'
+  ]), max_tokens=12).output == 'AAABBBBBBCCC'
 
 
 def test_flex_separator():

@@ -1,18 +1,20 @@
 from ..target import register_target_finder
+from ..rendering import Str
 
 try:
   import tiktoken
   
   @register_target_finder
   def openai_models(model, Target):
-    if isinstance(model, str) and model in OPENAI_MODELS_MAX_TOKENS:
+    if isinstance(model, str) and model in MAX_TOKENS:
       return Target(tokenizer=tiktoken.encoding_for_model(model),
-        max_tokens=OPENAI_MODELS_MAX_TOKENS[model])
+        max_tokens=MAX_TOKENS[model],
+        output_type=Str)
     model_name = getattr(model, 'model_name', None)
-    if model_name: return openai_models(model_name)
+    if model_name: return openai_models(model_name, Target)
     return None
 
-  OPENAI_MODELS_MAX_TOKENS = {
+  MAX_TOKENS = {
     'gpt-4': 8192,
     'gpt-4-0613': 8192,
     'gpt-4-32k': 32768,
