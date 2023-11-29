@@ -1,4 +1,4 @@
-from .renderer import Context
+from .context import Render
 from .cat import Cat
 from .flex import Flex
 from .target import Target, target, register_target_finder

@@ -4,8 +4,9 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import Any, Generic, TypeVar
 from collections.abc import Callable, Iterable
-from .renderer.context import Context, Part, Tokens, Overflow
+from .context import Render, Part, Tokens, Overflow
 from .cat import Cat
+from .target import Target
 
 def token_count(item):
   return getattr(item, 'token_count', 0)
@@ -15,12 +16,12 @@ def overflow_token_count(item):
 
 T = TypeVar('T')
 class Rendering(Generic[T], Part):
-  def __init__(self, ctx: Context, input, token_limit = None):
-    self.ctx = ctx
+  def __init__(self, target: Target, input, token_limit = None):
+    self.target = target
     self._parts = []
     self.input = input
     if token_limit is None:
-      self.tokens_remaining = ctx.max_tokens
+      self.tokens_remaining = target.max_tokens
     else:
       self.tokens_remaining = token_limit
 
@@ -59,20 +60,20 @@ class Rendering(Generic[T], Part):
   def __call__(self, input, token_limit=None):
     if token_limit is None:
       token_limit = self.tokens_remaining
-    return self.__class__(self.ctx, input, token_limit)
+    return self.__class__(self.target, input, token_limit)
 
   def render(self, input):
     match input:
       case None: return
       case Part(): yield input
       case str(): yield from self.render_str(input)
-      case Callable(): yield from map(self, input(self))
-      case Iterable(): yield from Cat(input)(self)
+      case Callable(): yield from map(self, input(Context(self)))
+      case Iterable(): yield from Cat(input)(Context(self))
       case _:
         yield from self.render_str(str(input))
 
   def render_str(self, input):
-    encoded = self.ctx.encode(input)
+    encoded = self.target.encode(input)
     include = Tokens(encoded[:self.tokens_remaining])
     overflow = Tokens(encoded[self.tokens_remaining:])
     yield include
@@ -81,4 +82,15 @@ class Rendering(Generic[T], Part):
 class Str(Rendering[str]):
   @cached_property
   def output(self) -> str:
-    return self.ctx.decode(self.tokens)
+    return self.target.decode(self.tokens)
+  
+@dataclass(frozen=True, slots=True)
+class Context(Generic[T], Render[T]):
+  _rendering: T
+
+  def __call__(self, *args, **kwargs) -> T:
+    return self._rendering(*args, **kwargs)
+  
+  @property
+  def tokens_remaining(self):
+    return self._rendering.tokens_remaining

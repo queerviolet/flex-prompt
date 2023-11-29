@@ -1,6 +1,6 @@
 from dataclasses import dataclass, replace
 from typing import Generic, TypeVar
-from .renderer.context import Tokenizer
+from .context import Tokenizer
 
 T = TypeVar('T')
 

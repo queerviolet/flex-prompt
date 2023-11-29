@@ -6,12 +6,8 @@ class Tokenizer(Protocol):
   def decode(self, encoded: list[Any]) -> str: pass
 
 T = TypeVar('T')
-class Context(Protocol, Generic[T]):
-  max_tokens: int
-  tokenizer: Tokenizer
-  output_type: type[T]
-
-  @abstractmethod
+class Render(Protocol, Generic[T]):
+  tokens_remaining: int
   def __call__(self, input) -> T: pass
 
 class Part: pass

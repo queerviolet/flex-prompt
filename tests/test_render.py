@@ -1,12 +1,12 @@
 
-from flex_prompt import Flex, Cat
-from test_helpers import infinite, render
+from flex_prompt import Flex, Cat, render
+from test_helpers import infinite
 
 def test_callable(snapshot):
   def prompt(inst, tips, examples, output, input):    
     return Flex([
       inst,
-      Cat(tips),
+      tips,
       output,
       Cat(examples, flex_weight=2),
       f'Input: {input}',
@@ -16,11 +16,11 @@ def test_callable(snapshot):
     inst='Make a nice list',
     input='something else',
     tips=map(lambda tip: f'Tip {tip[0]}: {tip[1]}\n',
-                 enumerate(infinite("Do the right thing"))),    
+             enumerate(infinite("Do the right thing"))),    
     examples=map(lambda ex: f'Example {ex[0]}:\n{ex[1]}',
                  enumerate(infinite('Input: something\nOutput:\n  - a\n  - b\n  - c\n\n'))),
     output='Return a markdown list'
-    ), max_tokens=2000).output)
+    ), model='test-len-str', max_tokens=2000).output)
 
 
 def test_recursive(snapshot):
@@ -28,4 +28,4 @@ def test_recursive(snapshot):
     yield 'hello'
     yield Cat([1, 2, 3])
     yield Flex([infinite('a'), infinite('b'), infinite('c')])
-  snapshot.assert_match(render(items, max_tokens=100).output)
+  snapshot.assert_match(render(items, model='test-len-str', max_tokens=100).output)

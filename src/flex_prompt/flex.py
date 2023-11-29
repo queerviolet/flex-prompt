@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 from typing import Iterable, Any
-from . import Context
+from . import Render
 
 @dataclass
 class Flex:
@@ -9,7 +9,7 @@ class Flex:
   flex_weight: int = 1
   separator: Any = None
 
-  def __call__(self, render: Context) -> Iterable:
+  def __call__(self, render: Render) -> Iterable:
     tokens_remaining = render.tokens_remaining
     flex_total_weight = sum((flex_weight(c) for c in self.children))
     if self.separator:

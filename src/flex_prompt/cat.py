@@ -1,6 +1,6 @@
 from typing import Any, Iterable
 from dataclasses import dataclass
-from .renderer.context import Context, Overflow
+from .context import Render, Overflow
 
 @dataclass(init=False)
 class Cat:
@@ -10,7 +10,7 @@ class Cat:
     self.children = children
     self.flex_weight = flex_weight
 
-  def __call__(self, render: Context) -> Iterable:
+  def __call__(self, render: Render) -> Iterable:
     for child in self.children:
       for item in child:
         output = render(item)
