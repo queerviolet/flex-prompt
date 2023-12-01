@@ -8,7 +8,7 @@ from .rendering import Rendering
 T = TypeVar('T')
 U = TypeVar('U')
 
-class FindTarget(Generic[T], Protocol):
+class FindTarget(Protocol[T]):
   def __call__(self, model) -> Target[Rendering[T]]: pass
 
 @dataclass

@@ -8,5 +8,5 @@ class CharTokenizer:
 @register_target_finder
 def testing_model(model, target: type[Target]):
   if model == 'test-len-str':
-    return target(100, tokenizer=CharTokenizer(), output_type=Str)
+    return target(100, tokenizer=CharTokenizer(), rendering_type=Str)
   

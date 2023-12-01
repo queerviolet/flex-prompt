@@ -18,7 +18,7 @@ T = TypeVar('T')
 class Rendering(Generic[T], Part):
   def __init__(self, target: Target, input, token_limit = None):
     self.target = target
-    self._parts = []
+    self._parts: list[Part] = []
     self.input = input
     if token_limit is None:
       self.tokens_remaining = target.max_tokens
@@ -30,8 +30,8 @@ class Rendering(Generic[T], Part):
   def output(self) -> T: pass
 
   @cached_property
-  def tokens(self) -> str:
-    tokens = []
+  def tokens(self) -> list:
+    tokens: list = []
     for part in self:
       tokens.extend(getattr(part, 'tokens', []))
     return tokens
@@ -67,7 +67,9 @@ class Rendering(Generic[T], Part):
       case None: return
       case Part(): yield input
       case str(): yield from self.render_str(input)
-      case Callable(): yield from map(self, input(Context(self)))
+      case Callable(): # type: ignore
+        # https://github.com/python/mypy/issues/14014
+        yield from map(self, input(Context(self))) 
       case Iterable(): yield from Cat(input)(Context(self))
       case _:
         yield from self.render_str(str(input))
@@ -83,13 +85,14 @@ class Str(Rendering[str]):
   @cached_property
   def output(self) -> str:
     return self.target.decode(self.tokens)
-  
-@dataclass(frozen=True, slots=True)
-class Context(Generic[T], Render[T]):
-  _rendering: T
 
-  def __call__(self, *args, **kwargs) -> T:
-    return self._rendering(*args, **kwargs)
+R = TypeVar('R')
+@dataclass(frozen=True, slots=True)
+class Context(Generic[R], Render[Rendering[R]]):
+  _rendering: Rendering[R]
+
+  def __call__(self, input, token_limit=None) -> Rendering[R]:
+    return self._rendering(input, token_limit=token_limit)
   
   @property
   def tokens_remaining(self):

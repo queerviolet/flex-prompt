@@ -7,7 +7,7 @@ from .find_target import target
 T = TypeVar('T')
 U = TypeVar('U')
 
-class Renderer(Generic[T], Protocol):
+class Renderer(Protocol[T]):
   def __call__(self, input, model, **kwargs) -> Rendering[T]: pass
 
 @dataclass

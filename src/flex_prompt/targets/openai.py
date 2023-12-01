@@ -9,7 +9,7 @@ try:
     if isinstance(model, str) and model in MAX_TOKENS:
       return Target(tokenizer=tiktoken.encoding_for_model(model),
         max_tokens=MAX_TOKENS[model],
-        output_type=Str)
+        rendering_type=Str)
     model_name = getattr(model, 'model_name', None)
     if model_name: return openai_models(model_name, Target)
     return None

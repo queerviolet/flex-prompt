@@ -1,14 +1,14 @@
 from dataclasses import dataclass
-from typing import Any, Generic, Protocol, TypeVar, abstractmethod
+from typing import Any, Generic, Protocol, TypeVar
 
 class Tokenizer(Protocol):
   def encode(self, input: str) -> list[Any]: pass
   def decode(self, encoded: list[Any]) -> str: pass
 
-T = TypeVar('T')
-class Render(Protocol, Generic[T]):
+T = TypeVar('T', covariant=True)
+class Render(Protocol[T]):
   tokens_remaining: int
-  def __call__(self, input) -> T: pass
+  def __call__(self, input, token_limit=None) -> T: pass
 
 class Part: pass
 
