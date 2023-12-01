@@ -20,14 +20,3 @@ class Target(Generic[T]):
     if context_args:
       return replace(self, **context_args)(input)
     return self.output_type(self, input)
-
-_target_finders = []
-def target(model):
-  for finder in _target_finders:
-    target = finder(model, Target)
-    if target: return target
-  raise KeyError(model)
-
-def register_target_finder(find):
-  _target_finders.append(find)
-  return find

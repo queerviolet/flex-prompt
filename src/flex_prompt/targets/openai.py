@@ -1,4 +1,4 @@
-from ..target import register_target_finder
+from .. import register_target_finder
 from ..rendering import Str
 
 try:

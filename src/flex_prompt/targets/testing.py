@@ -1,4 +1,4 @@
-from ..target import Target, register_target_finder
+from .. import Target, register_target_finder
 from ..rendering import Str
 
 class CharTokenizer:

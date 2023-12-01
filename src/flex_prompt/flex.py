@@ -17,16 +17,17 @@ class Flex:
       tokens_remaining -= separator.token_count * (len(self.children) - 1)
       first = True
     for child in self.children:
-      if self.separator and not first:
-        yield separator
-      else:
-        first = False
       weight = flex_weight(child)
       size = int(tokens_remaining * weight / flex_total_weight)
       output = render(child, token_limit=size)
       tokens_remaining -= output.token_count
       flex_total_weight -= weight
-      if tokens_remaining >= 0: yield output
+      if tokens_remaining >= 0:
+        if self.separator and not first:
+          yield separator
+        else:
+          first = False
+        yield output
       else: return
 
 def flex_weight(child):
