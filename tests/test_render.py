@@ -1,5 +1,5 @@
 
-from flex_prompt import Flex, Cat, render
+from flex_prompt import Flex, Cat, Expect, render
 from test_helpers import infinite
 
 from dataclasses import dataclass
@@ -20,7 +20,7 @@ def test_callable(snapshot):
       output,
       Cat(examples, flex_weight=2),
       f'Input: {input}',
-      f'Output:'
+      f'Output:', Expect()
     ], separator='\n\n')
   snapshot.assert_match(render(prompt(
     inst='Make a nice list',

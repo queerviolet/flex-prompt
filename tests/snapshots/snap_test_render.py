@@ -27,12 +27,6 @@ Tip 14: Do the right thing
 Tip 15: Do the right thing
 Tip 16: Do the right thing
 Tip 17: Do the right thing
-Tip 18: Do the right thing
-Tip 19: Do the right thing
-Tip 20: Do the right thing
-Tip 21: Do the right thing
-Tip 22: Do the right thing
-Tip 23: Do the right thing
 
 
 Return a markdown list
@@ -156,52 +150,12 @@ Output:
   - b
   - c
 
-Example 17:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
-Example 18:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
-Example 19:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
-Example 20:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
-Example 21:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
-Example 22:
-Input: something
-Output:
-  - a
-  - b
-  - c
-
 
 
 Input: something else
 
-Output:'''
+Output:
+
+'''
 
 snapshots['test_recursive 1'] = 'hello123aaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbccccccccccccccccccccccccccccccc'

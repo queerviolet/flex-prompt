@@ -32,7 +32,6 @@ class Flex:
     
     if self.separator: first = True
     for rendered in final:
-      print(rendered)
       if self.separator:
         if not first: yield separator
         else: first = False
