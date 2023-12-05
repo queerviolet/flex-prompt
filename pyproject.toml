@@ -26,3 +26,6 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/queerviolet/flex-prompt"
 Issues = "https://github.com/queerviolet/flex-prompt/issues"
+
+[project.optional-dependencies]
+openai = ["tiktoken"]
