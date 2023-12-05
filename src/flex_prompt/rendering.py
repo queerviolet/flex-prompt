@@ -14,6 +14,9 @@ def token_count(item):
 def overflow_token_count(item):
   return getattr(item, 'overflow_token_count', 0)
 
+def expected_token_count(item):
+  return getattr(item, 'expected_token_count', 0)
+
 T = TypeVar('T')
 class Rendering(Generic[T], Part):
   def __init__(self, target: Target, input, token_limit = None):
@@ -41,6 +44,10 @@ class Rendering(Generic[T], Part):
   @cached_property
   def overflow_token_count(self) -> int:
     return sum((overflow_token_count(part) for part in self), 0)
+
+  @cached_property
+  def expected_token_count(self) -> int:
+    return sum((expected_token_count(part) for part in self), 0)
 
   @cached_property
   def _iter(self):

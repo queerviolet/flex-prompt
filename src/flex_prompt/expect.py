@@ -18,3 +18,7 @@ class Expectation(Part):
   """An expected response"""
   token_count: int
   output_parser: Callable[[str], Any]
+
+  @property
+  def expected_token_count(self) -> int:
+    return self.token_count

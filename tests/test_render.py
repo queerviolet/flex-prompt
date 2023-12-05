@@ -22,7 +22,7 @@ def test_callable(snapshot):
       f'Input: {input}',
       f'Output:', Expect()
     ], separator='\n\n')
-  snapshot.assert_match(render(prompt(
+  rendered = render(prompt(
     inst='Make a nice list',
     input='something else',
     tips=MapInfinite(lambda tip: f'Tip {tip[0]}: {tip[1]}\n',
@@ -30,8 +30,9 @@ def test_callable(snapshot):
     examples=MapInfinite(lambda ex: f'Example {ex[0]}:\n{ex[1]}',
                          'Input: something\nOutput:\n  - a\n  - b\n  - c\n\n'),
     output='Return a markdown list'
-    ), model='test-len-str', max_tokens=2000).output)
-
+    ), model='test-len-str', max_tokens=2000)
+  snapshot.assert_match(rendered.output)
+  assert rendered.expected_token_count == 504
 
 def test_recursive(snapshot):
   def items(ctx):
