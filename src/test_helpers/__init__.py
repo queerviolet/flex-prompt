@@ -1,3 +1,3 @@
-def infinite(s):
+def infinite(s):  
   while True:
     yield s

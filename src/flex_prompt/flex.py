@@ -11,24 +11,32 @@ class Flex:
 
   def __call__(self, render: Render) -> Iterable:
     tokens_remaining = render.tokens_remaining
-    flex_total_weight = sum((flex_weight(c) for c in self.children))
     if self.separator:
       separator = render(self.separator)
       tokens_remaining -= separator.token_count * (len(self.children) - 1)
-      first = True
-    for child in self.children:
+    initial_render = []
+    for i, child in enumerate(self.children):
+      initial_render.append((i, child, render(child)))      
+    initial_render.sort(key=lambda r: r[2].token_count)
+    
+    flex_total_weight = sum((flex_weight(c) for c in self.children))
+    final = [None] * len(initial_render)
+    for i, child, rendering in initial_render:
       weight = flex_weight(child)
-      size = int(tokens_remaining * weight / flex_total_weight)
-      output = render(child, token_limit=size)
-      tokens_remaining -= output.token_count
+      allocation = int(tokens_remaining * weight / flex_total_weight)
+      if rendering.token_count > allocation:
+        rendering = render(child, token_limit=allocation)    
+      tokens_remaining -= rendering.token_count
       flex_total_weight -= weight
-      if tokens_remaining >= 0:
-        if self.separator and not first:
-          yield separator
-        else:
-          first = False
-        yield output
-      else: return
+      final[i] = rendering
+    
+    if self.separator: first = True
+    for rendered in final:
+      print(rendered)
+      if self.separator:
+        if not first: yield separator
+        else: first = False
+      yield rendered
 
 def flex_weight(child):
   return getattr(child, 'flex_weight', 1)
