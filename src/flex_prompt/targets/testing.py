@@ -6,7 +6,7 @@ class CharTokenizer:
   def decode(self, tokens): return ''.join(tokens)
 
 @register_target_finder
-def testing_model(model, target: type[Target]):
+def testing_model(model):
   if model == 'test-len-str':
-    return target(100, tokenizer=CharTokenizer(), rendering_type=Str)
+    return Target(100, tokenizer=CharTokenizer(), rendering_type=Str)
   

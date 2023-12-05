@@ -6,3 +6,4 @@ from .rendering import Rendering
 from .render import render
 from .find_target import target, register_target_finder
 from . import targets
+VER = 2

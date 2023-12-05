@@ -1,6 +1,6 @@
 
 from dataclasses import dataclass, replace
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from .target import Target
 from .rendering import Rendering
@@ -9,7 +9,7 @@ T = TypeVar('T')
 U = TypeVar('U')
 
 class FindTarget(Protocol[T]):
-  def __call__(self, model) -> Target[Rendering[T]]: pass
+  def __call__(self, model) -> Target[Rendering[T]] | None: pass
 
 @dataclass
 class GenericFindTarget(FindTarget[Any]):
@@ -20,12 +20,12 @@ class GenericFindTarget(FindTarget[Any]):
 
   def __call__(self, model) -> Target[Any]:
     for finder in _target_finders:
-      target = finder(model, Target)
+      target = finder(model)
       if target: return target
     raise KeyError(model)    
 
 _target_finders = []
-def register_target_finder(find):
+def register_target_finder(find: FindTarget[Any]):
   _target_finders.append(find)
   return find
 

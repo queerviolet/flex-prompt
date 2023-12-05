@@ -1,15 +1,15 @@
-from .. import register_target_finder
+from .. import register_target_finder, Target
 from ..rendering import Str
 
 @register_target_finder
-def openai_models(model, Target):
+def openai_models(model):
   if isinstance(model, str) and model in MAX_TOKENS:
     import tiktoken
     return Target(tokenizer=tiktoken.encoding_for_model(model),
       max_tokens=MAX_TOKENS[model],
       rendering_type=Str)
   model_name = getattr(model, 'model_name', None)
-  if model_name: return openai_models(model_name, Target)
+  if model_name: return openai_models(model_name)
   return None
 
 MAX_TOKENS = {
