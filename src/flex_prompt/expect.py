@@ -10,7 +10,6 @@ class Expect:
   output_parser: Callable[[str], Any] = str
 
   def __call__(self, ctx: Render):
-    print("call expect")
     yield Expectation(ctx.tokens_remaining, self.output_parser)
 
 @dataclass(frozen=True, slots=True)
