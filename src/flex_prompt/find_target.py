@@ -9,7 +9,7 @@ T = TypeVar('T')
 U = TypeVar('U')
 
 class FindTarget(Protocol[T]):
-  def __call__(self, model) -> Target[Rendering[T]] | None: pass
+  def __call__(self, model: Any) -> Target[Rendering[T]] | None: pass
 
 @dataclass
 class GenericFindTarget(FindTarget[Any]):
