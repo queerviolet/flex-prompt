@@ -9,6 +9,7 @@ def openai_models(model):
       max_tokens=MAX_TOKENS[model],
       rendering_type=Str)
   model_name = getattr(model, 'model_name', None)
+  if not model_name: model_name = getattr(model, 'model_name_or_path', None)
   if model_name: return openai_models(model_name)
   return None
 

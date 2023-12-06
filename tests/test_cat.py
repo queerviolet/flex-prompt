@@ -35,3 +35,17 @@ def test_cat_join_block():
                      model='test-len-str',
                      token_limit=len(one) + len(two) + int(0.5 * len(three)))                     
   assert rendering.output == (one + '---' + two)
+
+def test_cat_clip_if_big():
+  """
+  Cat mode='block' should fall back to clipping if it
+  encounters an item too large to ever be rendered.
+  """
+  rendering = render(Cat('a', ['x' * 1000], mode='block'),
+                     model='test-len-str',
+                     token_limit=10)
+  assert rendering.output == 'axxxxxxxxx'
+  rendering = render(Cat('a', ['0123456789'], mode='block'),
+                    model='test-len-str',
+                    token_limit=10)
+  assert rendering.output == 'a'

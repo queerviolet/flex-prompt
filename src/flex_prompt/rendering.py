@@ -119,3 +119,7 @@ class Context(Generic[R], Render[Rendering[R]]):
   @property
   def tokens_remaining(self):
     return self._rendering.tokens_remaining
+  
+  @property
+  def token_limit(self):
+    return self._rendering.token_limit

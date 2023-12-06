@@ -20,8 +20,9 @@ class Cat:
       for item in child:
         output = render(item, token_limit=render.tokens_remaining - join_len)
         if self.mode == 'block' and output.overflow_token_count > 0:
-          yield Overflow(output)
-          return
+          if output.overflow_token_count < render.token_limit:
+            yield Overflow(output)
+            return
         if join_len: yield rendered_join
         if first:
           join_len = len(rendered_join)

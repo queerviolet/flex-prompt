@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 class Tokenizer(Protocol):
   def encode(self, input: str) -> list[Any]: pass
@@ -7,7 +7,12 @@ class Tokenizer(Protocol):
 
 T = TypeVar('T', covariant=True)
 class Render(Protocol[T]):
-  tokens_remaining: int
+  @property
+  def tokens_remaining(self) -> int: pass
+
+  @property
+  def token_limit(self) -> int: pass
+
   def __call__(self, input, token_limit=None) -> T: pass
 
 class Part: pass
