@@ -7,12 +7,12 @@ from . import Render
 class Flex:
   children: list[Any]
   flex_weight: int = 1
-  separator: Any = None
+  join: Any = None
 
   def __call__(self, render: Render) -> Iterable:
     tokens_remaining = render.tokens_remaining
-    if self.separator:
-      separator = render(self.separator)
+    if self.join:
+      separator = render(self.join)
       tokens_remaining -= separator.token_count * (len(self.children) - 1)
     initial_render = []
     for i, child in enumerate(self.children):
@@ -30,9 +30,9 @@ class Flex:
       flex_total_weight -= weight
       final[i] = rendering
     
-    if self.separator: first = True
+    if self.join: first = True
     for rendered in final:
-      if self.separator:
+      if self.join:
         if not first: yield separator
         else: first = False
       yield rendered

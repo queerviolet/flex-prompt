@@ -81,7 +81,11 @@ class Rendering(Generic[T], Part):
       case str(): yield from self.render_str(input)
       case Callable(): # type: ignore
         # https://github.com/python/mypy/issues/14014
-        yield from map(self, input(Context(self))) 
+        output = input(Context(self))
+        if isinstance(output, str | Part) or not isinstance(output, Iterable):
+          yield output
+        else:
+          yield from map(self, input(Context(self)))
       case Iterable(): yield from Cat(input)(Context(self))
       case _:
         yield from self.render_str(str(input))

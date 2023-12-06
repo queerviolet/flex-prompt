@@ -22,4 +22,4 @@ def test_flex_separator():
     infinite('A'),
     Cat(infinite('B'), flex_weight=2),
     infinite('C'),
-  ], separator='--'), max_tokens=12).output == 'AA--BBBB--CC'
+  ], join='--'), max_tokens=12).output == 'AA--BBBB--CC'

@@ -13,16 +13,24 @@ class MapInfinite:
     yield from map(self.mapper, enumerate(infinite(self.s)))
 
 def test_callable(snapshot):
-  def prompt(inst, tips, examples, output, input):    
-    return Flex([
-      inst,
-      tips,
-      output,
-      Cat(examples, flex_weight=2),
-      f'Input: {input}',
-      f'Output:', Expect()
-    ], separator='\n\n')
-  rendered = render(prompt(
+  @dataclass
+  class ComplexPrompt:
+    inst: str
+    tips: list[str]
+    examples: list[str]
+    input: str
+    output: str | Expect = Expect
+    def __call__(self, _ctx):
+      yield Flex([
+        self.inst,
+        self.tips,
+        self.output,
+        Cat(self.examples, flex_weight=2),
+        f'Input: {self.input}',
+        f'Output:', Expect()
+      ], join='\n\n')
+  
+  rendered = render(ComplexPrompt(
     inst='Make a nice list',
     input='something else',
     tips=MapInfinite(lambda tip: f'Tip {tip[0]}: {tip[1]}\n',
