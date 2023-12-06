@@ -27,6 +27,7 @@ class Rendering(Generic[T], Part):
       self.tokens_remaining = target.max_tokens
     else:
       self.tokens_remaining = token_limit
+    self.token_limit = self.tokens_remaining    
 
   @property  
   @abstractmethod
@@ -48,6 +49,10 @@ class Rendering(Generic[T], Part):
   @cached_property
   def expected_token_count(self) -> int:
     return sum((expected_token_count(part) for part in self), 0)
+
+  @cached_property
+  def max_response_tokens(self) -> int:
+    return self.expected_token_count
 
   @cached_property
   def _iter(self):
@@ -92,6 +97,12 @@ class Str(Rendering[str]):
   @cached_property
   def output(self) -> str:
     return self.target.decode(self.tokens)
+  
+  @cached_property
+  def max_response_tokens(self) -> int:
+    actual_count = len(self.target.encode(self.output))
+    return self.token_limit - actual_count
+
 
 R = TypeVar('R')
 @dataclass(frozen=True, slots=True)
