@@ -45,5 +45,10 @@ def test_flexed(snapshot):
       yield 'Answer: ', self.answer
   render = target('test-len-str')
   rendering = render(Ask(infinite('tk'), 'What is to come?'), token_limit=200)
-  snapshot.assert_match(rendering.output)
+  assert rendering.output == '''Given the text, answer the question.
+
+Text:
+tktktktktktktktktktktktktktktktktktktktktktktktktktktktktktktktk
+Question: What is to come?
+Answer: '''
   assert rendering.max_response_tokens == 56
