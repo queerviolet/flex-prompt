@@ -1,6 +1,6 @@
 # flex[prompt]
 
-**This readme is available as a [colab notebook](https://colab.research.google.com/drive/1AS_ra8v0OmC2UlnsWZghkRnLfmQXzpJ-?usp=sharing).**
+**This document is available as a [colab notebook](https://colab.research.google.com/drive/1AS_ra8v0OmC2UlnsWZghkRnLfmQXzpJ-?usp=sharing)**
 
 Large language models have *maximum context window*—a maximum number of tokens they can receive and produce. You may have noticed this:
 
@@ -14,13 +14,11 @@ Flex prompt does not handle model execution, but integrates well with execution 
 
 We'll install `flex-prompt` with the optional `openai` dependencies, since we're using OpenAI models for these examples. This will install `tiktoken`, the OpenAI tokenizer.
 
-## Setup
-
 ```sh
 pip install flex-prompt[openai]
 ```
 
-Let's also get ourselves a long string to work with:
+Let's get ourselves a long string to work with:
 
 ```python
 #@title `WAR_AND_PEACE` = *(text of War and Peace from Project Gutenberg)*
@@ -32,7 +30,7 @@ with urlopen(WAR_AND_PEACE_URL) as f: WAR_AND_PEACE = f.read().decode('utf-8')
 Flex prompt is largely agnostic to how you run your models. We'll use LangChain for these examples.
 
 ```sh
-pip install langchain openai
+pip install langchain openai >/dev/null
 ```
 
 ```python
@@ -41,6 +39,7 @@ from langchain.llms import OpenAI
 
 # Quick Example
 
+## Rendering directly
 
 ```python
 from flex_prompt import render, Flex, Expect
@@ -63,11 +62,206 @@ print(davinci(rendered.output, max_tokens=rendered.max_response_tokens))
      Leo Tolstoy/Tolstoi
 
 
-Here, we're using flex prompt's `Flex` component. `Flex` divides the available space in the prompt evenly amongst its children, filling the space completely. Neat!
+Here, we're using flex prompt's `Flex` component and rendering it directly. `Flex` divides the available space in the prompt evenly amongst its children, filling the space completely. Neat!
 
 But note that if we *entirely* fill the context window with our prompt, we'll have no more tokens left for the response! That's the role of `Expect`: it's a placeholder which participates in layout but doesn't render any tokens, leaving room for a response.
 
 We can get the rendered prompt string from `rendered.output` and the number of tokens available for the response from `rendered.max_response_tokens`, which we use to call the model and get an answer.
+
+## `Flexed` components
+
+You can inherit from `flex_prompt.Flexed` to define a prompt component whose `content()` is flexed:
+
+
+```python
+from flex_prompt import Flexed, Expect
+from dataclasses import dataclass
+
+@dataclass
+class Ask(Flexed):
+  text: str
+  question: str
+  answer: str | Expect = Expect(str)
+  instruct: str = "Given a text, answer the question."
+
+  flex_join = '\n' # yielded items will be joined by newlines
+  def content(self, _ctx):
+    if self.instruct:
+      yield 'Given the text, answer the question.'
+      yield ''
+    yield 'Text:'
+    yield self.text
+    yield 'Question: ', self.question
+    yield 'Answer: ', self.answer
+```
+
+We can then pass an instance of `Ask` to `render`:
+
+
+```python
+from flex_prompt import render
+rendering = render(Ask(text=WAR_AND_PEACE[10000:], question="What character names are in the text?"),
+                   model=davinci, token_limit=300)
+print(rendering.output)
+print(davinci(rendering.output, max_tokens=rendering.max_response_tokens))
+```
+
+    Given the text, answer the question.
+    
+    Text:
+    . He went up to Anna Pávlovna,
+    kissed her hand, presenting to her his bald, scented, and shining head,
+    and complacently seated himself on the sofa.
+    
+    “First of all, dear friend, tell me how you are. Set your friend’s
+    mind at rest,” said he without altering his tone, beneath the
+    politeness and affected sympathy of which indifference and even irony
+    could be discerned.
+    
+    “Can one be well while suffering morally? Can one be calm in times
+    like these if one has any feeling?�
+    Question: What character names are in the text?
+    Answer: 
+    
+    
+    The only character name mentioned in the text is Anna Pávlovna.
+
+
+Note that we take an `answer` and default it to `Expect(str)`. Writing prompts like this lets us use the same component to render examples and the active prompt, simplifying format changes:
+
+
+```python
+examples = [
+  ('The triangle is green', 'What color is the triangle?', 'green'),
+  ('If you breathe deeply, you will fall asleep.', 'How do you fall asleep?', 'breathe deeply'),
+  ('The 5-ht2a receptor mediates gastrointestinal activation',
+   'What does the 5-ht3 receptor do?',
+   'not answered in the text')
+]
+
+@dataclass
+class AskWithExamples(Flexed):
+  examples: list[tuple[str, str, str]]
+  ask: Ask
+
+  flex_join = '\n'
+  def content(self, _ctx):
+    yield Ask.instruct
+    yield ''
+    for text, q, a in self.examples:
+      yield '**EXAMPLE:**'
+      yield Ask(text, q, a, instruct=None)
+      yield '**END EXAMPLE**'
+    yield self.ask
+
+
+rendering = render(
+    AskWithExamples(examples, Ask(WAR_AND_PEACE, 'Who published this?')),
+    model=davinci,
+    token_limit=1000)
+print(rendering.output)
+```
+
+    Given a text, answer the question.
+    
+    **EXAMPLE:**
+    Text:
+    The triangle is green
+    Question: What color is the triangle?
+    Answer: green
+    **END EXAMPLE**
+    **EXAMPLE:**
+    Text:
+    If you breathe deeply, you will fall asleep.
+    Question: How do you fall asleep?
+    Answer: breathe deeply
+    **END EXAMPLE**
+    **EXAMPLE:**
+    Text:
+    The 5-ht2a receptor mediates gastrointestinal activation
+    Question: What does the 5-ht3 receptor do?
+    Answer: not answered in the text
+    **END EXAMPLE**
+    Given the text, answer the question.
+    
+    Text:
+    ﻿The Project Gutenberg eBook of War and Peace
+        
+    This ebook is for the use of anyone anywhere in the United States and
+    most other parts of the world at no cost and with almost no restrictions
+    whatsoever. You may copy it, give it away or re-use it under the terms
+    of the Project Gutenberg License included with this ebook or online
+    at www.gutenberg.org. If you are not located in the United States,
+    you will have to check the laws of the country where you are located
+    before using this eBook.
+    
+    Title: War and Peace
+    
+    
+    Author: graf Leo Tolstoy
+    
+    Translator: Aylmer Maude
+            Louise Maude
+    
+    Release date: April 1, 2001 [eBook #2600]
+                    Most recently updated: June 14, 2022
+    
+    Language: English
+    
+    
+    
+    *** START OF THE PROJECT GUTENBERG EBOOK WAR AND PEACE ***
+    
+    
+    
+    WAR AND PEACE
+    
+    
+    By Leo Tolstoy/Tolstoi
+    
+    
+        Contents
+    
+        BOOK ONE: 1805
+    
+        CHAPTER I
+    
+        CHAPTER II
+    
+        CHAPTER III
+    
+        CHAPTER IV
+    
+        CHAPTER V
+    
+        CHAPTER VI
+    
+        CHAPTER VII
+    
+        CHAPTER VIII
+    
+        CHAPTER IX
+    
+        CHAPTER X
+    
+        CHAPTER XI
+    
+        CHAPTER XII
+    
+        CHAPTER XIII
+    
+        CHAPTER XIV
+    
+        CHAPTER XV
+    
+        CHAPTER XVI
+    
+        CHAPTER XVII
+    
+        CHAPTER
+    Question: Who published this?
+    Answer: 
+
 
 ## `flex_prompt.render`
 Flex prompt exports a top-level `render` function which renders an input for a given model. This returns a `Rendering[str]`, whose `output` is the rendered prompt string.
@@ -100,7 +294,7 @@ davinci(rendering.output, max_tokens=rendering.max_response_tokens)
 
 
 
-    ' Red, orange, yellow, green, blue, indigo, violet.'
+    ' Red, orange, yellow, green, blue, indigo, violet'
 
 
 
@@ -117,7 +311,7 @@ davinci(rendering.output, max_tokens=rendering.max_response_tokens)
 
 
 
-    ' The colors of the rainbow are red, orange, yellow, green, blue, indigo, and violet.'
+    ' Red, orange, yellow, green, blue, indigo, violet.'
 
 
 
@@ -206,41 +400,43 @@ print(rendering.output)
 
 To control this, you can use the `Cat` component explicitly (list rendering uses `Cat` implicitly).
 
-## components
+## callables
 
-If you hand render something which is callable, it will get called with a rendering context. This function must return an iterable over things which `render` can render.
+`render` will accept almost any input. Relevantly, it will accept a callable generator, which it will then call with a rendering context. This lets us write prompt components—functional prompt templates describing not just string substitutions, but also basic layout instructions.
+
+It's convenient to define prompt components as dataclasses:
 
 
 
 ```python
-from flex_prompt import render, Expect
+from flex_prompt import Flex, Render, Expect
+from dataclasses import dataclass
 
-def ask_questions_text(text, question):
-  yield 'Answer a question about this text:\n'
-  yield text, '\n'
-  yield 'Q: ', question, '\n'
-  yield 'A: ', Expect()
+@dataclass
+class Ask:
+  """Given a text, answer a question."""
+  text: str
+  question: str
+  def __call__(self, ctx: Render):
+    yield Flex([
+      'Given the text, answer the question\n\n',
+      'Text:\n', self.text, '\n',
+      'Question: ', self.question,
+      'Answer:', Expect()
+    ])
 
-rendering = render(ask_questions_text(text=[one, two, three], question='when did the chinchillas arrive?'), model=davinci)
-print(rendering.output)
-print(davinci(rendering.output, max_tokens=rendering.max_response_tokens))
+rendered = render(Ask(text=WAR_AND_PEACE, question='Where is this text from?'), model=davinci)
+davinci(rendered.output, max_tokens=rendered.expected_token_count)
 ```
 
-    Answer a question about this text:
-    
-    and lo betide, the red sky opened upon us as though the crinkled
-    hand of the heavens itself was reaching down.
-    
-    we were witness to dark and terrible portents, whose nameless
-    features we could not grasp with our mortal minds
-    
-    it was only then, in the moment when cruel stars had long since
-    wrung us dry, that the chinchillas arrived.
-    
-    Q: when did the chinchillas arrive?
-    A: 
-     The chinchillas arrived when the stars had long since wrung the mortals dry.
 
+
+
+    ' This text is from the Project Gutenberg eBook of War and Peace.'
+
+
+
+The usage above is pretty common, and regrettably ugly. Flex prompt provides a `Flexed` base class to simplify the common case where you just want to throw a bunch of stuff in the prompt and have it show up:
 
 # Included components: `Flex` and `Cat`
 
@@ -358,42 +554,6 @@ print(rendering.output)
     it was only then, in the moment when cruel stars had long
 
 
-# Prompt components
-
-`render` will accept almost any input. Relevantly, it will accept a callable generator, which it will then call with a rendering context. This lets us write prompt components—functional prompt templates describing not just string substitutions, but also basic layout instructions.
-
-It's convenient to define prompt components as dataclasses:
-
-
-
-```python
-from flex_prompt import Flex, Cat, Render, Expect
-from dataclasses import dataclass
-
-@dataclass
-class Ask:
-  """Given a text, answer a question."""
-  text: str
-  question: str
-  def __call__(self, ctx: Render):
-    yield Flex([
-      'Given the text, answer the question\n\n',
-      'Text:\n', self.text, '\n',
-      'Question: ', self.question,
-      'Answer:', Expect()
-    ])
-
-rendered = render(Ask(text=WAR_AND_PEACE, question='Where is this text from?'), model=davinci)
-davinci(rendered.output, max_tokens=rendered.expected_token_count)
-```
-
-
-
-
-    ' This text is from the Project Gutenberg eBook of War and Peace.'
-
-
-
 # Targeting a particular model
 
 When you call `render(input, model=m)`, flex prompt searches for a render `Target` for `m`. If you want to do this search once rather than every time you render, you can call `flex_prompt.target` to get a model-specific renderer:
@@ -407,7 +567,7 @@ rendering = render(Ask(text=WAR_AND_PEACE,
 print(davinci(rendering.output, max_tokens=rendering.expected_token_count))
 ```
 
-     A 19th century Russian aristocrat would likely think highly of this book, as it was written by the famous Russian author Leo Tolstoy and is widely considered to be one of the greatest works of literature in history.
+     A 19th century Russian aristocrat might think this book is a good depiction of life during war and peace.
 
 
 # Integrating new models
