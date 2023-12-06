@@ -23,3 +23,27 @@ def test_flex_separator():
     Cat(infinite('B'), flex_weight=2),
     infinite('C'),
   ], join='--'), max_tokens=12).output == 'AA--BBBB--CC'
+
+from dataclasses import dataclass
+from flex_prompt import Flexed, Expect
+
+def test_flexed(snapshot):
+  @dataclass
+  class Ask(Flexed):
+    """Given a text, answer a question."""
+    text: str
+    question: str
+    answer: str | Expect = Expect(str)
+
+    flex_join = '\n'
+    def content(self, _ctx):
+      yield 'Given the text, answer the question.'
+      yield ''
+      yield 'Text:'
+      yield self.text
+      yield 'Question: ', self.question
+      yield 'Answer: ', self.answer
+  render = target('test-len-str')
+  rendering = render(Ask(infinite('tk'), 'What is to come?'), token_limit=200)
+  snapshot.assert_match(rendering.output)
+  assert rendering.max_response_tokens == 56

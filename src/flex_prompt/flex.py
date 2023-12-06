@@ -39,3 +39,12 @@ class Flex:
 
 def flex_weight(child):
   return getattr(child, 'flex_weight', 1)
+
+from abc import abstractmethod
+class Flexed:
+  def __call__(self, render: Render) -> Iterable:
+    join = getattr(self, 'flex_join', None)
+    yield Flex(list(self.content(render)), join=join)
+
+  @abstractmethod
+  def content(self, render: Render) -> Iterable: pass

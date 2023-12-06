@@ -1,6 +1,6 @@
 from .context import Render
 from .cat import Cat
-from .flex import Flex
+from .flex import Flex, Flexed
 from .expect import Expect
 from .target import Target
 from .rendering import Rendering
