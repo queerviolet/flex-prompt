@@ -1,5 +1,5 @@
-from dataclasses import dataclass, replace
-from typing import Any, Generic, TypeVar, Protocol, Callable
+from dataclasses import dataclass, fields, replace
+from typing import Any, Generic, TypeVar, Callable
 from .context import Tokenizer
 
 T = TypeVar('T')
@@ -16,7 +16,11 @@ class Target(Generic[T]):
   def decode(self, encoded):
     return self.tokenizer.decode(encoded)
   
-  def __call__(self, input, **context_args) -> T:
-    if context_args:
-      return replace(self, **context_args)(input)
-    return self.rendering_type(self, input)
+  def __call__(self, input, **kwargs) -> T:
+    target_args = {
+      (f.name): kwargs[f.name] for f in fields(Target) if f.name in kwargs
+    }
+    remaining_args = { arg: v for arg, v in kwargs.items() if arg not in target_args }
+    if target_args:
+      return replace(self, **target_args)(input, **remaining_args)
+    return self.rendering_type(self, input, **kwargs)
