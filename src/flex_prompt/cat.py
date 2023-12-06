@@ -1,14 +1,12 @@
-from enum import StrEnum
 from typing import Any, Iterable
 from dataclasses import dataclass
 from .context import Render, Overflow
 
-Mode = StrEnum('Mode', ['block', 'clip'])
 @dataclass(init=False)
 class Cat:
   children: tuple[Iterable[Any], ...]
   flex_weight: int = 1
-  def __init__(self, *children: Iterable[Any], flex_weight=1, join: Any='', mode: Mode = 'block'):
+  def __init__(self, *children: Iterable[Any], flex_weight=1, join: Any='', mode: str = 'block'):
     self.children = children
     self.flex_weight = flex_weight
     self.join = join
